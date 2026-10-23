@@ -54,15 +54,15 @@
   backdrop-filter: blur(20px) saturate(130%);
   border-color: rgba(202, 236, 252, .22);
 }
-.topbar { border-radius: 0 0 16px 16px; box-shadow: 0 10px 35px rgba(0, 8, 18, .1); }
-.footer { border-radius: 10px 10px 0 0; }
+.topbar { padding-inline: 24px; border-radius: 0 0 16px 16px; box-shadow: 0 10px 35px rgba(0, 8, 18, .1); }
+.footer { padding-inline: 24px; border-radius: 10px 10px 0 0; gap: 12px; }
 .footer p, .footer button, .footer > span { color: #b9d0df; }
 .nav-button { color: #bed2df; }
 .intro { text-shadow: 0 2px 20px rgba(0, 9, 19, .7); }
 .intro::before {
   content: '';
   position: absolute;
-  inset: -14px -15px;
+  inset: 0;
   z-index: -1;
   border: 1px solid rgba(209, 238, 254, .13);
   border-radius: 18px;
@@ -101,7 +101,7 @@ dialog { border-radius: 20px; background: rgba(8, 29, 46, .87); -webkit-backdrop
 }
 @media (max-width: 760px) {
   .topbar, .footer { background: rgba(7, 23, 39, .56); }
-  .intro::before { inset: -10px -8px; border-radius: 14px; background: rgba(8, 26, 43, .4); }
+  .intro::before { inset: 0; border-radius: 14px; background: rgba(8, 26, 43, .4); }
   .right-rail { padding: 0; }
   .anatomy-panel {
     background: transparent;
@@ -128,4 +128,69 @@ dialog { border-radius: 20px; background: rgba(8, 29, 46, .87); -webkit-backdrop
 }
 @media (prefers-reduced-transparency: reduce) {
   .hud-panel, .topbar, .footer, .scene-label, .tour-bar, .toast, .part-button { background: #0b2337; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* Keep the glass frame and the content inside it on the same alignment grid. */
+:root { --left-rail-edge: 35px; --left-rail-width: 236px; --title-size: 39px; }
+.header-actions .tour-button,
+.header-actions .consultation-cta {
+  width: 184px;
+  height: 42px;
+  min-height: 42px;
+  padding: 0 14px;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+.header-actions .consultation-cta > span { display: block; font-size: inherit; font-weight: 600; white-space: nowrap; }
+.header-actions .tour-button svg,
+.header-actions .consultation-cta svg { width: 17px; height: 17px; }
+.footer p { min-width: 0; }
+.footer button { flex-shrink: 0; }
+
+@media (min-width: 761px) {
+  .intro, .anatomy-panel { left: var(--left-rail-edge); width: var(--left-rail-width); }
+  .intro { padding: 18px 16px 20px; }
+  .intro h1 { font-size: var(--title-size); margin: 14px 0 13px; }
+}
+@media (min-width: 1600px) {
+  :root { --left-rail-edge: 48px; --left-rail-width: 250px; --title-size: 42px; }
+}
+@media (max-width: 1370px) and (min-width: 761px) {
+  :root { --left-rail-edge: 25px; --left-rail-width: 216px; --title-size: 36px; }
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  :root { --left-rail-width: 190px; --title-size: 31px; }
+  .topbar, .footer { padding-inline: 16px; }
+  .header-actions { gap: 8px; }
+  .header-actions .tour-button, .header-actions .consultation-cta { width: 160px; padding: 0 10px; gap: 8px; font-size: 12px; }
+  .header-actions .tour-button svg, .header-actions .consultation-cta svg { width: 14px; height: 14px; }
+}
+@media (max-height: 800px) and (min-width: 761px) {
+  .intro { padding-block: 12px; }
+  .intro h1 { font-size: min(var(--title-size), 38px); margin: 9px 0 0; }
+}
+@media (max-width: 900px) and (min-width: 761px) {
+  .hoopes-logo { width: 132px; }
+  .top-nav { gap: 14px; }
+  .header-actions .tour-button, .header-actions .consultation-cta { width: 156px; padding-inline: 8px; }
+}
+@media (max-width: 760px) {
+  .topbar, .footer { padding-inline: 12px; }
+  .hoopes-logo { width: 146px; }
+  .header-actions .consultation-cta { width: 168px; padding: 0 10px; gap: 8px; }
+  .header-actions .consultation-cta svg { width: 14px; height: 14px; }
+  .header-actions #start-tour { right: 12px; width: auto; height: 34px; min-height: 34px; padding: 0; gap: 7px; justify-content: center; font-size: 11px; }
+  .intro { top: 61px; padding: 9px 12px 10px; }
+  .intro .eyebrow { font-size: 8.5px; line-height: 1.2; }
+  .intro h1 { font-size: 30px; line-height: 1.05; margin: 8px 0 0; }
+}
+@media (max-width: 360px) {
+  .topbar, .footer { padding-inline: 10px; }
+  .hoopes-logo { width: 108px; }
+  .header-actions .consultation-cta { width: 154px; padding: 0 8px; gap: 6px; font-size: 12px; }
+  .header-actions .consultation-cta svg { width: 12px; height: 12px; }
+  .header-actions #start-tour { right: 10px; }
+  .intro h1 { font-size: 27px; }
 }
