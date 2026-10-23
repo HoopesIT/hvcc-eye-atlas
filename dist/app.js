@@ -9,6 +9,7 @@ let mode = 'anatomy';
 let view = 'cutaway';
 let labelsVisible = true;
 let rotating = false;
+let moving = false;
 let tourIndex = -1;
 let visionIndex = -1;
 let engine;
@@ -73,6 +74,10 @@ function updateLabels(positions) {
   const container = $('#scene');
   const w = container.clientWidth;
   const h = container.clientHeight;
+  const sceneRect = container.getBoundingClientRect();
+  const panels = $$('.hud-panel, .topbar, .footer, .intro, #tour-bar, #start-tour')
+    .filter((panel) => getComputedStyle(panel).display !== 'none' && !panel.hidden)
+    .map((panel) => panel.getBoundingClientRect());
   const sorted = [...positions].sort((a,b) => (a.id === selectedId ? -1 : b.id === selectedId ? 1 : 0));
   const shown = new Set();
   sorted.forEach(({ id, x, y, visible }) => {
@@ -82,7 +87,8 @@ function updateLabels(positions) {
     const px = Math.max(width / 2 + 3, Math.min(w - width / 2 - 3, x));
     const py = Math.max(15, Math.min(h - 15, y));
     const collision = occupied.some((point) => Math.abs(point.x - px) < (point.width + width) / 2 + 10 && Math.abs(point.y - py) < 36);
-    const show = labelsVisible && visible && shown.size < max && !collision && x > 0 && x < w && y > 0 && y < h;
+    const behindPanel = panels.some((rect) => px + sceneRect.left + width / 2 > rect.left - 8 && px + sceneRect.left - width / 2 < rect.right + 8 && py + sceneRect.top + 18 > rect.top - 8 && py + sceneRect.top - 18 < rect.bottom + 8);
+    const show = labelsVisible && visible && shown.size < max && !collision && !behindPanel && x > 0 && x < w && y > 0 && y < h;
     label.classList.toggle('invisible', !show);
     label.setAttribute('aria-hidden', String(!show));
     if (show) {
@@ -192,10 +198,21 @@ function toggleRotation() {
   $('#auto-rotate').classList.toggle('active', rotating);
   $('#auto-rotate').setAttribute('aria-pressed', String(rotating));
 }
+function toggleMove() {
+  moving = !moving;
+  engine?.setInteractionMode(moving ? 'pan' : 'rotate');
+  $('#move-eye').classList.toggle('active', moving);
+  $('#move-eye').setAttribute('aria-pressed', String(moving));
+  $('#drag-hint').textContent = moving ? 'Drag to move the eye' : 'Drag to rotate';
+}
 function reset() {
   endTour();
   if (mode !== 'anatomy') setMode('anatomy');
   engine?.reset();
+  moving = false;
+  $('#move-eye').classList.remove('active');
+  $('#move-eye').setAttribute('aria-pressed', 'false');
+  $('#drag-hint').textContent = 'Drag to rotate';
   setView('cutaway');
   rotating = false;
   $('#auto-rotate').classList.remove('active');
@@ -214,6 +231,14 @@ $('#explode').addEventListener('input', (event) => {
 $('#zoom-in').addEventListener('click', () => engine?.zoom(1));
 $('#zoom-out').addEventListener('click', () => engine?.zoom(-1));
 $('#auto-rotate').addEventListener('click', toggleRotation);
+$('#move-eye').addEventListener('click', toggleMove);
+$('#move-eye').addEventListener('keydown', (event) => {
+  const directions = { ArrowLeft: [-40, 0], ArrowRight: [40, 0], ArrowUp: [0, -40], ArrowDown: [0, 40] };
+  if (!directions[event.key]) return;
+  event.preventDefault();
+  if (!moving) toggleMove();
+  engine?.pan(...directions[event.key]);
+});
 $('#toggle-labels').addEventListener('click', toggleLabels);
 $('#reset').addEventListener('click', reset);
 $('#part-prev').addEventListener('click', () => choosePart(PARTS[(PARTS.findIndex((part) => part.id === selectedId) + PARTS.length - 1) % PARTS.length].id));

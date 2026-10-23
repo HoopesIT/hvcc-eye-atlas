@@ -12,7 +12,7 @@ export function createEyeScene(container, callbacks = {}) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.16;
   renderer.domElement.className = 'eye-canvas';
-  renderer.domElement.setAttribute('aria-label', 'Interactive three-dimensional human eye. Drag to rotate and scroll to zoom.');
+  renderer.domElement.setAttribute('aria-label', 'Interactive three-dimensional human eye. Drag to rotate, hold Shift or choose Move eye to reposition, and scroll or pinch to zoom.');
   renderer.domElement.setAttribute('role', 'img');
   renderer.domElement.style.cssText = 'display:block;width:100%;height:100%;touch-action:none;outline:none;';
   container.appendChild(renderer.domElement);
@@ -25,10 +25,14 @@ export function createEyeScene(container, callbacks = {}) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const cameraDirection = new THREE.Vector3(-0.45, 0.19, 0.873).normalize();
-  const state = { view: 'cutaway', explode: 0.32, selected: null, labels: true, autoRotate: false, lightPath: false };
+  const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
+  const cameraUp = new THREE.Vector3().crossVectors(cameraDirection, cameraRight).normalize();
+  const cameraTarget = new THREE.Vector3();
+  const state = { view: 'cutaway', explode: 0.32, selected: null, labels: true, autoRotate: false, lightPath: false, interactionMode: 'rotate' };
   let actualExplode = 0.32;
   let rotationX = 0, rotationY = 0, targetX = 0, targetY = 0;
   let zoomActual = 1, zoomTarget = 1;
+  let panX = 0, panY = 0, panTargetX = 0, panTargetY = 0, viewportWorldHeight = 4.5;
   let width = 1, height = 1, frame = 0, destroyed = false, startTime = performance.now(), lastTime = startTime;
   let lastLabelTime = 0, dragged = false, pointerDown = null, pinchDistance = 0;
   const pointers = new Map();
@@ -320,10 +324,37 @@ export function createEyeScene(container, callbacks = {}) {
   }
   const resizeObserver = new ResizeObserver(resize); resizeObserver.observe(container); resize();
   function setCamera() {
-    const aspectFit = width / height < 1.5 ? 1.5 / (width / height) : 1;
-    const distance = (6.6 + actualExplode * 1.05) * Math.max(1, aspectFit * .9) / zoomActual;
-    camera.position.copy(cameraDirection).multiplyScalar(distance);
-    camera.lookAt(-.13 - actualExplode * .22, -.025, 0);
+    const mobile = width <= 760;
+    const halfFov = THREE.MathUtils.degToRad(camera.fov * .5);
+    // Use the entire screen for the model. On a phone, keep the globe above
+    // the information card while still allowing an enlarged eye to pass under it.
+    const baseDistance = mobile
+      ? 2.92 / (.62 * camera.aspect * 2 * Math.tan(halfFov))
+      : 6.6 + actualExplode * 1.05;
+    const distance = baseDistance / zoomActual;
+    viewportWorldHeight = 2 * distance * Math.tan(halfFov);
+    const worldWidth = viewportWorldHeight * camera.aspect;
+    panTargetX = THREE.MathUtils.clamp(panTargetX, -worldWidth * .65, worldWidth * .65);
+    panTargetY = THREE.MathUtils.clamp(panTargetY, -viewportWorldHeight * .5, viewportWorldHeight * .5);
+    cameraTarget.set(-.13 - actualExplode * .22, -.025, 0)
+      .addScaledVector(cameraUp, viewportWorldHeight * (mobile ? -.08 : -.015))
+      .addScaledVector(cameraRight, -panX)
+      .addScaledVector(cameraUp, -panY);
+    camera.position.copy(cameraDirection).multiplyScalar(distance).add(cameraTarget);
+    camera.lookAt(cameraTarget);
+  }
+  function pan(deltaX, deltaY) {
+    const dx = Number(deltaX), dy = Number(deltaY);
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
+    const unitsPerPixel = viewportWorldHeight / height;
+    const maxX = viewportWorldHeight * camera.aspect * .65, maxY = viewportWorldHeight * .5;
+    panTargetX = THREE.MathUtils.clamp(panTargetX + dx * unitsPerPixel, -maxX, maxX);
+    panTargetY = THREE.MathUtils.clamp(panTargetY - dy * unitsPerPixel, -maxY, maxY);
+  }
+  function setInteractionMode(mode) {
+    if (!['rotate', 'pan'].includes(mode)) return;
+    state.interactionMode = mode;
+    renderer.domElement.style.cursor = pointers.size ? 'grabbing' : 'grab';
   }
   function selectPart(id) {
     if (id !== null && !anatomy.has(id)) return;
@@ -344,7 +375,10 @@ export function createEyeScene(container, callbacks = {}) {
     if (event.button !== 0 && event.pointerType === 'mouse') return;
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     renderer.domElement.setPointerCapture(event.pointerId);
-    if (pointers.size === 1) { pointerDown = { x: event.clientX, y: event.clientY, rx: targetX, ry: targetY }; dragged = false; }
+    if (pointers.size === 1) {
+      pointerDown = { x: event.clientX, y: event.clientY, lastX: event.clientX, lastY: event.clientY, rx: targetX, ry: targetY, pan: state.interactionMode === 'pan' || event.shiftKey };
+      dragged = false;
+    }
     if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchDistance = Math.hypot(a.x - b.x, a.y - b.y); dragged = true; }
     renderer.domElement.style.cursor = 'grabbing';
   }
@@ -353,13 +387,15 @@ export function createEyeScene(container, callbacks = {}) {
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinchDistance) zoomTarget = THREE.MathUtils.clamp(zoomTarget * d / pinchDistance, .62, 1.85);
+      if (pinchDistance) zoomTarget = THREE.MathUtils.clamp(zoomTarget * d / pinchDistance, .62, 2.4);
       pinchDistance = d; return;
     }
     if (!pointerDown || pointers.size !== 1) return;
     const dx = event.clientX - pointerDown.x, dy = event.clientY - pointerDown.y;
     if (Math.abs(dx) + Math.abs(dy) > 5) dragged = true;
-    targetY = pointerDown.ry + dx * .006; targetX = THREE.MathUtils.clamp(pointerDown.rx + dy * .0045, -1.25, 1.25);
+    if (pointerDown.pan) pan(event.clientX - pointerDown.lastX, event.clientY - pointerDown.lastY);
+    else { targetY = pointerDown.ry + dx * .006; targetX = THREE.MathUtils.clamp(pointerDown.rx + dy * .0045, -1.25, 1.25); }
+    pointerDown.lastX = event.clientX; pointerDown.lastY = event.clientY;
   }
   function onPointerUp(event) {
     const wasSingle = pointers.size === 1;
@@ -371,10 +407,15 @@ export function createEyeScene(container, callbacks = {}) {
       const hits = raycaster.intersectObjects(pickables, false).filter(h => h.object.visible && h.object.parent.visible);
       if (hits.length) { const id = hits[0].object.userData.part; selectPart(id); callbacks.onSelect?.(id); }
     }
-    pointerDown = null; renderer.domElement.style.cursor = 'grab';
+    if (renderer.domElement.hasPointerCapture(event.pointerId)) renderer.domElement.releasePointerCapture(event.pointerId);
+    if (pointers.size === 1) {
+      const remaining = [...pointers.values()][0];
+      pointerDown = { x: remaining.x, y: remaining.y, lastX: remaining.x, lastY: remaining.y, rx: targetX, ry: targetY, pan: state.interactionMode === 'pan' || event.shiftKey };
+    } else pointerDown = null;
+    renderer.domElement.style.cursor = pointers.size ? 'grabbing' : 'grab';
   }
   function onPointerCancel(event) { pointers.delete(event.pointerId); pointerDown = null; pinchDistance = 0; renderer.domElement.style.cursor = 'grab'; }
-  function onWheel(event) { event.preventDefault(); zoomTarget = THREE.MathUtils.clamp(zoomTarget * Math.exp(-event.deltaY * .00085), .62, 1.85); }
+  function onWheel(event) { event.preventDefault(); zoomTarget = THREE.MathUtils.clamp(zoomTarget * Math.exp(-event.deltaY * .00085), .62, 2.4); }
   renderer.domElement.style.cursor = 'grab';
   renderer.domElement.addEventListener('pointerdown', onPointerDown);
   renderer.domElement.addEventListener('pointermove', onPointerMove);
@@ -432,7 +473,8 @@ export function createEyeScene(container, callbacks = {}) {
     if (state.autoRotate && !pointers.size && !reducedMotion) targetY += dt * .13;
     rotationY = THREE.MathUtils.damp(rotationY, targetY, 9, dt); rotationX = THREE.MathUtils.damp(rotationX, targetX, 9, dt);
     model.rotation.set(rotationX, rotationY, 0); model.position.y = reducedMotion ? 0 : Math.sin(time * .65) * .035;
-    zoomActual = THREE.MathUtils.damp(zoomActual, zoomTarget, 9, dt); setCamera();
+    zoomActual = THREE.MathUtils.damp(zoomActual, zoomTarget, 9, dt);
+    panX = THREE.MathUtils.damp(panX, panTargetX, 12, dt); panY = THREE.MathUtils.damp(panY, panTargetY, 12, dt); setCamera();
     updateSelection(time, dt);
     if (state.lightPath) rayPaths.forEach((ray, i) => { if (ray.curve) ray.dot.position.copy(ray.curve.getPoint(reducedMotion ? .6 : (time * .23 + i * .13) % 1)); });
     renderer.render(scene, camera);
@@ -454,9 +496,11 @@ export function createEyeScene(container, callbacks = {}) {
     setLabels(value) { state.labels = !!value; emitLabels(); },
     setAutoRotate(value) { state.autoRotate = !!value; },
     setLightPath(value) { state.lightPath = !!value; rays.visible = state.lightPath; if (state.lightPath) updateRayPaths(); },
-    zoom(delta) { zoomTarget = THREE.MathUtils.clamp(zoomTarget * Math.exp(Number(delta) * .12), .62, 1.85); },
-    reset() { targetX = 0; targetY = 0; zoomTarget = 1; state.autoRotate = false; },
-    getState() { return { ...state, zoom: zoomTarget, rotation: { x: targetX, y: targetY } }; },
+    setInteractionMode,
+    pan,
+    zoom(delta) { const amount = Number(delta); if (Number.isFinite(amount)) zoomTarget = THREE.MathUtils.clamp(zoomTarget * Math.exp(amount * .12), .62, 2.4); },
+    reset() { targetX = 0; targetY = 0; zoomTarget = 1; panTargetX = 0; panTargetY = 0; state.autoRotate = false; setInteractionMode('rotate'); },
+    getState() { return { ...state, zoom: zoomTarget, rotation: { x: targetX, y: targetY }, pan: { x: panTargetX, y: panTargetY } }; },
     destroy() {
       if (destroyed) return; destroyed = true; cancelAnimationFrame(frame); resizeObserver.disconnect();
       renderer.domElement.removeEventListener('pointerdown', onPointerDown); renderer.domElement.removeEventListener('pointermove', onPointerMove);

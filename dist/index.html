@@ -8,6 +8,7 @@
   <title>Hoopes Vision | Interactive Eye Atlas</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./glass.css">
 </head>
 <body>
   <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -28,6 +29,7 @@
   </defs></svg>
   <div class="app" id="app">
     <div class="atmosphere" aria-hidden="true"></div>
+    <div id="scene" class="scene" role="img" aria-label="Full-screen interactive schematic 3D model of a human eye. Drag to rotate, scroll to zoom, or choose Move eye to reposition it behind the glass panels."><div id="scene-loading" class="scene-loading"><div class="loader-orbit"></div><span>Preparing your perspective</span></div><div id="scene-labels" class="scene-labels"></div></div>
     <header class="topbar">
       <a class="brand" href="./" aria-label="Hoopes Vision Eye Atlas home"><img class="hoopes-logo" src="./assets/hoopes-logo.png" alt="Hoopes Vision"><span class="brand-divider"></span><span class="brand-caption">EYE ATLAS</span></a>
       <nav class="top-nav" aria-label="Explore the eye">
@@ -54,9 +56,8 @@
       </aside>
 
       <div class="scene-meta"><span class="status-dot"></span><span id="scene-status">INTERACTIVE 3D MODEL</span><span class="meta-line"></span><span class="model-id">OCULUS / 001</span></div>
-      <div id="scene" class="scene" role="img" aria-label="Interactive schematic 3D model of a human eye. Drag to rotate, scroll to zoom, or use the anatomy index and controls."><div id="scene-loading" class="scene-loading"><div class="loader-orbit"></div><span>Preparing your perspective</span></div><div id="scene-labels" class="scene-labels"></div></div>
       <div class="orientation" aria-hidden="true"><span class="axis-v"></span><span class="axis-h"></span><span class="orientation-caption">FREE ROTATION</span></div>
-      <div class="interaction-hint"><span class="mouse-icon"></span>Drag to rotate<span class="hint-divider"></span>Scroll to zoom<span class="hint-divider"></span>Click to discover</div>
+      <div class="interaction-hint"><span class="mouse-icon"></span><span id="drag-hint">Drag to rotate</span><span class="hint-divider"></span>Scroll or pinch to zoom<span class="hint-divider"></span>Click to discover</div>
 
       <div class="right-rail">
       <aside class="detail-panel hud-panel" aria-labelledby="detail-name">
@@ -83,7 +84,7 @@
       <section class="explore-console hud-panel" aria-label="3D model controls">
         <div class="view-controls"><span class="micro-label console-label">YOUR PERSPECTIVE</span><div class="view-tabs" role="group" aria-label="Model view"><button data-view="whole">Whole eye</button><button class="active" data-view="cutaway">Cutaway</button><button data-view="exploded">Exploded</button></div></div>
         <div class="explode-controls"><div class="explode-heading"><label for="explode">SEPARATE THE LAYERS</label><output id="explode-value" for="explode">32<span>%</span></output></div><div class="slider-row"><svg><use href="#i-layers"/></svg><input id="explode" type="range" min="0" max="100" value="32" aria-label="Layer separation"><svg class="spread-icon"><use href="#i-layers"/></svg></div><div class="slider-captions"><span>Assembled</span><span>Exploded</span></div></div>
-        <div class="tool-controls"><div class="zoom-group"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out"><svg><use href="#i-minus"/></svg></button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in"><svg><use href="#i-plus"/></svg></button></div><span class="tool-divider"></span><button id="auto-rotate" class="icon-button" aria-label="Auto rotate" aria-pressed="false" title="Auto rotate"><svg><use href="#i-rotate"/></svg></button><button id="toggle-labels" class="icon-button active" aria-label="Show structure labels" aria-pressed="true" title="Structure labels"><svg><use href="#i-crosshair"/></svg></button><button id="reset" class="icon-button" aria-label="Reset view" title="Reset view"><svg><use href="#i-eye"/></svg></button></div>
+        <div class="tool-controls"><div class="zoom-group"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out"><svg><use href="#i-minus"/></svg></button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in"><svg><use href="#i-plus"/></svg></button></div><span class="tool-divider"></span><button id="move-eye" class="icon-button" aria-label="Move eye" aria-pressed="false" title="Move eye (or hold Shift and drag)"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></svg></button><button id="auto-rotate" class="icon-button" aria-label="Auto rotate" aria-pressed="false" title="Auto rotate"><svg><use href="#i-rotate"/></svg></button><button id="toggle-labels" class="icon-button active" aria-label="Show structure labels" aria-pressed="true" title="Structure labels"><svg><use href="#i-crosshair"/></svg></button><button id="reset" class="icon-button" aria-label="Reset view" title="Reset view"><svg><use href="#i-eye"/></svg></button></div>
       </section>
       <div id="tour-bar" class="tour-bar" hidden><div><span class="micro-label" id="tour-progress">GUIDED TOUR / 01 OF 09</span><p id="tour-instruction">Meet the cornea.</p></div><button id="tour-next" class="tour-button">Next structure <svg><use href="#i-arrow"/></svg></button><button id="tour-close" class="small-icon" aria-label="End guided tour"><svg><use href="#i-close"/></svg></button></div>
     </main>

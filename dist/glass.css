@@ -1,0 +1,131 @@
+/* The canvas and the HUD share a backdrop, so glass blurs the actual 3D eye. */
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+.workspace { z-index: 2; pointer-events: none; }
+.right-rail { pointer-events: none; background: transparent; }
+.hud-panel, .tour-bar { pointer-events: auto; }
+.scene-meta, .interaction-hint, .orientation, .intro { pointer-events: none; }
+.scene-meta { z-index: 2; text-shadow: 0 1px 10px #03101e; }
+.footer { z-index: 4; }
+
+.hud-panel {
+  border: 1px solid rgba(210, 237, 249, .27);
+  border-top-color: rgba(226, 246, 255, .42);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(27, 48, 66, .61), rgba(6, 21, 35, .76));
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgba(240, 251, 255, .09), inset 1px 0 0 rgba(207, 241, 255, .04), 0 16px 44px rgba(0, 7, 16, .2);
+}
+.hud-panel::before { left: 22px; width: 37px; background: rgba(208, 247, 255, .62); }
+.hud-panel::after { right: 22px; width: 27px; }
+.right-rail { padding: 3px 3px 7px; }
+.panel-heading { color: #d3e6f0; }
+.muted, .micro-label { color: #acc7d8; }
+.part-button { color: #c7dce8; border-radius: 8px; }
+.part-number { color: #9ab8ca; }
+.part-button.active { background: linear-gradient(90deg, rgba(171, 233, 248, .18), rgba(165, 225, 246, .06)); }
+.part-button:hover { background-color: rgba(225, 246, 255, .07); }
+.index-footer { color: #b4cddc; }
+.detail-subtitle { color: #c5dbe8; }
+.detail-description { color: #d7e5ef; }
+.fact-block { color: #ccdfeb; }
+.detail-footer a { color: #c0dfeb; }
+.journey-copy p { color: #c5dbe8; }
+.function-block p { color: #f0f6f9; }
+.console-label, .explode-heading label, .slider-captions { color: #bfd5e3; }
+.view-tabs { background: rgba(2, 14, 27, .32); border-color: rgba(198, 231, 250, .2); border-radius: 9px; }
+.view-tabs button { color: #c4d9e6; border-radius: 6px; }
+.view-tabs button.active { background: rgba(185, 232, 247, .16); border-color: rgba(205, 245, 255, .36); color: #f1fcff; }
+.icon-button { border-radius: 9px; color: #c2dce9; }
+.icon-button.active { background: rgba(160, 225, 244, .16); color: #c4f5ff; }
+.small-icon { border-radius: 7px; border-color: rgba(212, 239, 255, .25); color: #d1e6f0; }
+.interaction-hint { color: #c3dbe8; text-shadow: 0 1px 8px #020d17; }
+.orientation-caption { color: #b4cedd; text-shadow: 0 1px 8px #020d17; }
+
+.topbar, .footer {
+  background: linear-gradient(110deg, rgba(15, 35, 53, .55), rgba(6, 20, 34, .67));
+  -webkit-backdrop-filter: blur(20px) saturate(130%);
+  backdrop-filter: blur(20px) saturate(130%);
+  border-color: rgba(202, 236, 252, .22);
+}
+.topbar { border-radius: 0 0 16px 16px; box-shadow: 0 10px 35px rgba(0, 8, 18, .1); }
+.footer { border-radius: 10px 10px 0 0; }
+.footer p, .footer button, .footer > span { color: #b9d0df; }
+.nav-button { color: #bed2df; }
+.intro { text-shadow: 0 2px 20px rgba(0, 9, 19, .7); }
+.intro::before {
+  content: '';
+  position: absolute;
+  inset: -14px -15px;
+  z-index: -1;
+  border: 1px solid rgba(209, 238, 254, .13);
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(10, 28, 46, .58), rgba(7, 23, 39, .36));
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+.intro p { color: #d0e1ec; }
+.scene-label {
+  border-color: rgba(209, 240, 255, .3);
+  border-radius: 8px;
+  background: rgba(9, 30, 47, .59);
+  -webkit-backdrop-filter: blur(12px) saturate(125%);
+  backdrop-filter: blur(12px) saturate(125%);
+  color: #e0f1f8;
+  box-shadow: inset 0 1px 0 rgba(234, 250, 255, .09), 0 5px 18px rgba(0, 8, 18, .12);
+}
+.scene-label.selected { background: rgba(30, 65, 85, .68); border-color: rgba(200, 247, 255, .65); }
+.tour-bar, .toast {
+  border-radius: 14px;
+  background: rgba(9, 31, 49, .75);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgba(225, 246, 255, .12), 0 12px 35px rgba(0, 7, 18, .23);
+}
+dialog { border-radius: 20px; background: rgba(8, 29, 46, .87); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); }
+
+@media (max-width: 1370px) and (min-width: 761px) {
+  .tool-controls {
+    background: rgba(9, 28, 44, .67);
+    -webkit-backdrop-filter: blur(22px) saturate(130%);
+    backdrop-filter: blur(22px) saturate(130%);
+    border: 1px solid rgba(204, 239, 254, .27);
+    border-radius: 12px;
+  }
+}
+@media (max-width: 760px) {
+  .topbar, .footer { background: rgba(7, 23, 39, .56); }
+  .intro::before { inset: -10px -8px; border-radius: 14px; background: rgba(8, 26, 43, .4); }
+  .right-rail { padding: 0; }
+  .anatomy-panel {
+    background: transparent;
+    border: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+  .part-button {
+    border-radius: 10px;
+    background: rgba(10, 31, 49, .64);
+    border-color: rgba(213, 240, 255, .28);
+    -webkit-backdrop-filter: blur(18px) saturate(125%);
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+  .part-button.active { background: rgba(37, 76, 99, .73); }
+  .tool-controls { background: transparent; border: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .tool-controls .icon-button { width: 29px; }
+  .tool-controls { gap: 7px; }
+  .interaction-hint { font-size: 8px; gap: 5px; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hud-panel, .topbar, .footer, .scene-label, .tour-bar, .toast { background: rgba(8, 27, 43, .94); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .hud-panel, .topbar, .footer, .scene-label, .tour-bar, .toast, .part-button { background: #0b2337; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
