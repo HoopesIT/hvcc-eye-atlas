@@ -645,7 +645,9 @@ export function createEyeScene(container, callbacks = {}) {
       const cornealCondition = ['keratoconus', 'astigmatism'].includes(state.condition), mobile = width <= 760;
       const baseWorldHeight = mobile ? 2.92 / (.62 * camera.aspect) : 2 * (6.6 + state.explode * 1.05) * Math.tan(THREE.MathUtils.degToRad(camera.fov * .5));
       panTargetX = cornealCondition ? baseWorldHeight * camera.aspect * (mobile ? .16 : .18) : 0;
-      panTargetY = 0; zoomTarget = cornealCondition ? (mobile ? .9 : .8) : 1; state.autoRotate = false;
+      // Tall desktop windows need more room between the side panels.
+      const cornealZoom = mobile ? .9 : THREE.MathUtils.clamp(.8 * camera.aspect / 1.5, .62, .8);
+      panTargetY = 0; zoomTarget = cornealCondition ? cornealZoom : 1; state.autoRotate = false;
     },
     setLabels(value) { state.labels = !!value; emitLabels(); },
     setAutoRotate(value) { state.autoRotate = !!value; },
