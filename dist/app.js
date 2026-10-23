@@ -1,5 +1,6 @@
 import { createEyeScene } from './eye-scene.js';
 import { PARTS, VISION_STEPS, SOURCES, MODEL_NOTE } from './content.js';
+import { CONDITIONS, MODEL_CONDITION_NOTE } from './conditions.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -12,11 +13,31 @@ let rotating = false;
 let moving = false;
 let tourIndex = -1;
 let visionIndex = -1;
+let conditionId = 'keratoconus';
+let comparing = false;
 let engine;
 let toastTimer;
 const visited = new Set();
 const labels = new Map();
 const categories = { cornea: 'OUTER STRUCTURE', iris: 'ANTERIOR STRUCTURE', pupil: 'LIGHT ENTRY', lens: 'FOCUSING STRUCTURE', vitreous: 'INNER CHAMBER', retina: 'INNER LAYER', choroid: 'MIDDLE LAYER', sclera: 'OUTER LAYER', 'optic-nerve': 'NEURAL CONNECTION' };
+const footerNote = $('#footer-note').textContent;
+const conditionAnnotation = document.createElement('span');
+conditionAnnotation.className = 'condition-scene-label';
+conditionAnnotation.innerHTML = 'Optic nerve head<small>Enlarged schematic</small>';
+conditionAnnotation.hidden = true;
+$('#scene-labels').append(conditionAnnotation);
+
+CONDITIONS.forEach((condition) => {
+  const part = PARTS.find((entry) => entry.id === condition.partId);
+  const button = document.createElement('button');
+  button.className = 'condition-button';
+  button.dataset.condition = condition.id;
+  button.style.setProperty('--condition-color', part.color);
+  button.setAttribute('aria-pressed', 'false');
+  button.innerHTML = `<span class="condition-dot"></span><span><strong>${condition.name}</strong><small>${condition.id === 'normal' ? 'Reference anatomy' : part.name}</small></span><span class="condition-arrow" aria-hidden="true">↗</span>`;
+  button.addEventListener('click', () => chooseCondition(condition.id));
+  $('#condition-list').append(button);
+});
 
 PARTS.forEach((part, index) => {
   const button = document.createElement('button');
@@ -37,7 +58,7 @@ PARTS.forEach((part, index) => {
 });
 
 function choosePart(id) {
-  if (mode !== 'anatomy') setMode('anatomy');
+  if (mode === 'vision') setMode('anatomy');
   if (tourIndex >= 0) endTour();
   selectPart(id, true);
 }
@@ -64,6 +85,8 @@ function selectPart(id, scroll = false) {
   });
   labels.forEach((label, key) => label.classList.toggle('selected', key === id));
   engine?.selectPart(id);
+  $('#condition-anatomy-name').textContent = part.name;
+  $('#condition-anatomy-description').textContent = part.description;
   if (scroll && window.innerWidth <= 760) $(`[data-part="${id}"]`).scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'nearest', inline: 'center' });
 }
 
@@ -75,12 +98,21 @@ function updateLabels(positions) {
   const w = container.clientWidth;
   const h = container.clientHeight;
   const sceneRect = container.getBoundingClientRect();
-  const panels = $$('.hud-panel, .topbar, .footer, .intro, #tour-bar, #start-tour')
+  const panels = $$('.hud-panel, .topbar, .footer, .intro, #tour-bar, #start-tour, .condition-model-note')
     .filter((panel) => getComputedStyle(panel).display !== 'none' && !panel.hidden)
     .map((panel) => panel.getBoundingClientRect());
   const sorted = [...positions].sort((a,b) => (a.id === selectedId ? -1 : b.id === selectedId ? 1 : 0));
   const shown = new Set();
+  conditionAnnotation.hidden = true;
   sorted.forEach(({ id, x, y, visible }) => {
+    if (id === 'condition-detail') {
+      const width = 155;
+      const blocked = panels.some((rect) => x + sceneRect.left + width / 2 > rect.left - 8 && x + sceneRect.left - width / 2 < rect.right + 8 && y + sceneRect.top + 25 > rect.top - 8 && y + sceneRect.top - 25 < rect.bottom + 8);
+      const show = mode === 'conditions' && conditionId === 'glaucoma' && visible && !blocked && x > width / 2 && x < w - width / 2 && y > 25 && y < h - 25;
+      conditionAnnotation.hidden = !show;
+      if (show) { conditionAnnotation.style.left = `${x}px`; conditionAnnotation.style.top = `${y}px`; occupied.push({ x, y, width }); }
+      return;
+    }
     const label = labels.get(id);
     if (!label) return;
     const width = id === 'optic-nerve' ? 106 : 82;
@@ -119,20 +151,108 @@ function setView(next, amount) {
     button.setAttribute('aria-pressed', String(active));
   });
   setExplosion(amount ?? ({ whole: 0, cutaway: 32, exploded: 88 }[next]));
-  $('#scene-status').textContent = next === 'whole' ? 'WHOLE EYE / INTERACTIVE 3D' : next === 'exploded' ? 'EXPLODED ANATOMY / INTERACTIVE 3D' : 'CUTAWAY ANATOMY / INTERACTIVE 3D';
+  updateSceneStatus();
+}
+
+function updateSceneStatus() {
+  if (mode === 'conditions') {
+    const condition = CONDITIONS.find((entry) => entry.id === conditionId);
+    $('#scene-status').textContent = `${condition.name.toUpperCase()} / ${comparing ? 'TYPICAL REFERENCE' : 'STRUCTURAL SCHEMATIC'}`;
+  } else $('#scene-status').textContent = view === 'whole' ? 'WHOLE EYE / INTERACTIVE 3D' : view === 'exploded' ? 'EXPLODED ANATOMY / INTERACTIVE 3D' : 'CUTAWAY ANATOMY / INTERACTIVE 3D';
+}
+
+function chooseCondition(id) {
+  conditionId = id;
+  if (mode !== 'conditions') setMode('conditions');
+  else applyCondition(id);
+  if (window.innerWidth <= 760) $(`[data-condition="${id}"]`).scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function applyCondition(id) {
+  const condition = CONDITIONS.find((entry) => entry.id === id);
+  if (!condition) return;
+  conditionId = id;
+  comparing = false;
+  engine?.setComparison(false);
+  engine?.setCondition(id);
+  setView(condition.preferredView, condition.preferredExplode);
+  selectPart(condition.partId);
+  engine?.focusCondition();
+  rotating = false;
+  $('#auto-rotate').classList.remove('active');
+  $('#auto-rotate').setAttribute('aria-pressed', 'false');
+  $('#app').dataset.condition = id;
+  $('#condition-category').textContent = id === 'normal' ? 'REFERENCE ANATOMY' : `FOCUS / ${PARTS.find((part) => part.id === condition.partId).name.toUpperCase()}`;
+  $('#condition-name').textContent = condition.name;
+  $('#condition-subtitle').textContent = condition.subtitle;
+  $('#condition-description').textContent = condition.description;
+  $('#condition-caution').textContent = condition.caution;
+  $('#condition-sources').replaceChildren(...condition.sourceUrls.map((source) => {
+    const link = document.createElement('a');
+    link.href = source.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.innerHTML = `<span>${source.title}</span>${icon('arrow')}`;
+    return link;
+  }));
+  $$('.condition-button').forEach((button) => {
+    const active = button.dataset.condition === id;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  $('.condition-detail').scrollTop = 0;
+  $('.right-rail').scrollTop = 0;
+  updateComparison();
+}
+
+function updateComparison() {
+  const condition = CONDITIONS.find((entry) => entry.id === conditionId);
+  const reference = conditionId === 'normal';
+  const button = $('#compare-condition');
+  button.hidden = reference;
+  button.classList.toggle('active', comparing);
+  button.setAttribute('aria-pressed', String(comparing));
+  button.querySelector('span').textContent = comparing ? `Return to ${condition.name.toLowerCase()}` : 'View typical eye';
+  $('#condition-state').textContent = comparing || reference ? 'TYPICAL REFERENCE' : 'SCHEMATIC';
+  $('#condition-change').textContent = comparing ? CONDITIONS[0].modelChange : condition.modelChange;
+  $('#comparison-note').textContent = reference ? 'Choose a condition to explore a structural change.' : comparing ? 'The model now shows typical anatomy in the same position. Return to the condition to compare.' : 'Switch to typical anatomy without moving the model.';
+  const notes = { normal: 'Typical anatomy · schematic reference', keratoconus: 'Corneal surface contours · schematic shape', astigmatism: 'Corneal surface contours · schematic shape', glaucoma: 'Optic nerve head · enlarged schematic', cataract: 'Lens opacity · schematic example' };
+  $('#condition-model-note-text').textContent = comparing ? `Typical anatomy · comparing ${condition.name.toLowerCase()}` : notes[conditionId];
+  updateSceneStatus();
 }
 
 function setMode(next) {
   mode = next;
   $('#app').classList.toggle('vision-mode', next === 'vision');
+  $('#app').classList.toggle('conditions-mode', next === 'conditions');
+  $('.condition-library').hidden = next !== 'conditions';
+  $('.condition-detail').hidden = next !== 'conditions';
+  $('#condition-model-note').hidden = next !== 'conditions';
+  $('#footer-note').textContent = next === 'conditions' ? 'Schematic structural examples. No diagnostic measurements.' : footerNote;
   $$('[data-mode]').forEach((button) => {
     const active = button.dataset.mode === next;
     button.classList.toggle('active', active);
     button.setAttribute('aria-pressed', String(active));
   });
-  engine?.setLightPath(next === 'vision');
-  if (next === 'vision') { endTour(); visionIndex = 0; setView('cutaway', 12); updateVision(); }
-  else { visionIndex = -1; setView('cutaway'); updateVision(); }
+  engine?.setLightPath(false);
+  if (next === 'conditions') {
+    endTour();
+    visionIndex = -1;
+    applyCondition(conditionId);
+    updateVision();
+  } else {
+    comparing = false;
+    engine?.setComparison(false);
+    engine?.setCondition('normal', { animate: false });
+    $('#app').dataset.condition = 'normal';
+    conditionAnnotation.hidden = true;
+    if (next === 'vision') { endTour(); visionIndex = 0; setView('cutaway', 12); engine?.setLightPath(true); updateVision(); }
+    else { visionIndex = -1; setView('cutaway'); updateVision(); }
+    engine?.focusCondition();
+    rotating = false;
+    $('#auto-rotate').classList.remove('active');
+    $('#auto-rotate').setAttribute('aria-pressed', 'false');
+  }
 }
 
 function updateVision() {
@@ -207,19 +327,18 @@ function toggleMove() {
 }
 function reset() {
   endTour();
-  if (mode !== 'anatomy') setMode('anatomy');
+  if (mode === 'vision') setMode('anatomy');
   engine?.reset();
   moving = false;
   $('#move-eye').classList.remove('active');
   $('#move-eye').setAttribute('aria-pressed', 'false');
   $('#drag-hint').textContent = 'Drag to rotate';
-  setView('cutaway');
   rotating = false;
   $('#auto-rotate').classList.remove('active');
   $('#auto-rotate').setAttribute('aria-pressed', 'false');
   if (!labelsVisible) toggleLabels();
-  selectPart('cornea', true);
-  toast('A fresh perspective. View reset.');
+  if (mode === 'conditions') { applyCondition(conditionId); toast('Condition view reset.'); }
+  else { setView('cutaway'); selectPart('cornea', true); toast('A fresh perspective. View reset.'); }
 }
 
 $$('[data-mode]').forEach((button) => button.addEventListener('click', () => setMode(button.dataset.mode)));
@@ -241,6 +360,12 @@ $('#move-eye').addEventListener('keydown', (event) => {
 });
 $('#toggle-labels').addEventListener('click', toggleLabels);
 $('#reset').addEventListener('click', reset);
+$('#compare-condition').addEventListener('click', () => {
+  if (conditionId === 'normal') return;
+  comparing = !comparing;
+  engine?.setComparison(comparing);
+  updateComparison();
+});
 $('#part-prev').addEventListener('click', () => choosePart(PARTS[(PARTS.findIndex((part) => part.id === selectedId) + PARTS.length - 1) % PARTS.length].id));
 $('#part-next').addEventListener('click', () => choosePart(PARTS[(PARTS.findIndex((part) => part.id === selectedId) + 1) % PARTS.length].id));
 $('#start-tour').addEventListener('click', startTour);
@@ -252,8 +377,9 @@ $('#fullscreen').addEventListener('click', async () => {
   catch { toast('Use your browser’s full-screen option for a larger view.'); }
 });
 document.addEventListener('fullscreenchange', () => { $('#fullscreen').setAttribute('aria-label', document.fullscreenElement ? 'Exit full screen' : 'Enter full screen'); });
-$('#model-note').textContent = MODEL_NOTE;
-SOURCES.forEach((source) => {
+$('#model-note').textContent = `${MODEL_NOTE} ${MODEL_CONDITION_NOTE}`;
+const allSources = [...new Map([...SOURCES, ...CONDITIONS.flatMap((condition) => condition.sourceUrls)].map((source) => [source.url, source])).values()];
+allSources.forEach((source) => {
   const link = document.createElement('a');
   link.href = source.url;
   link.target = '_blank';

@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#071522">
-  <meta name="description" content="Look inside the human eye. Rotate an interactive 3D model, separate its layers, and discover how your vision works.">
+  <meta name="description" content="Explore an interactive 3D eye, compare selected eye conditions, separate its layers, and discover how vision works with Hoopes Vision.">
   <title>Hoopes Vision | Interactive Eye Atlas</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./glass.css">
+  <link rel="stylesheet" href="./conditions.css">
 </head>
 <body>
   <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -33,8 +34,9 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Hoopes Vision Eye Atlas home"><img class="hoopes-logo" src="./assets/hoopes-logo.png" alt="Hoopes Vision"><span class="brand-divider"></span><span class="brand-caption">EYE ATLAS</span></a>
       <nav class="top-nav" aria-label="Explore the eye">
-        <button class="nav-button active" data-mode="anatomy">Explore anatomy</button>
-        <button class="nav-button" data-mode="vision">How vision works</button>
+        <button class="nav-button active" data-mode="anatomy" aria-label="Explore anatomy"><span class="nav-long">Explore anatomy</span><span class="nav-short">Anatomy</span></button>
+        <button class="nav-button" data-mode="conditions" aria-label="Explore eye conditions"><span class="nav-long">Eye conditions</span><span class="nav-short">Conditions</span></button>
+        <button class="nav-button" data-mode="vision" aria-label="How vision works"><span class="nav-long">How vision works</span><span class="nav-short">Vision</span></button>
       </nav>
       <div class="header-actions">
         <button class="tour-button" id="start-tour">Guided tour <svg><use href="#i-arrow"/></svg></button>
@@ -55,11 +57,36 @@
         <div class="index-footer"><span class="status-dot"></span><span>Select a structure to explore</span></div>
       </aside>
 
+      <aside class="condition-library hud-panel" aria-label="Choose an eye condition" hidden>
+        <div class="panel-heading"><span>CONDITION LIBRARY</span><span class="muted">05 VIEWS</span></div>
+        <div class="condition-list" id="condition-list"></div>
+        <div class="condition-library-footer"><span class="status-dot"></span><span>Choose a view to change the model</span></div>
+      </aside>
+
       <div class="scene-meta"><span class="status-dot"></span><span id="scene-status">INTERACTIVE 3D MODEL</span><span class="meta-line"></span><span class="model-id">OCULUS / 001</span></div>
       <div class="orientation" aria-hidden="true"><span class="axis-v"></span><span class="axis-h"></span><span class="orientation-caption">FREE ROTATION</span></div>
       <div class="interaction-hint"><span class="mouse-icon"></span><span id="drag-hint">Drag to rotate</span><span class="hint-divider"></span>Scroll or pinch to zoom<span class="hint-divider"></span>Click to discover</div>
+      <div class="condition-model-note" id="condition-model-note" hidden><span class="status-dot"></span><span id="condition-model-note-text">Schematic comparison</span></div>
 
       <div class="right-rail">
+      <aside class="condition-detail hud-panel" aria-labelledby="condition-name" hidden>
+        <div class="panel-heading"><span>CONDITION EXPLORER</span><span class="condition-state" id="condition-state">SCHEMATIC</span></div>
+        <div class="condition-copy" aria-live="polite">
+          <div class="detail-category" id="condition-category"></div>
+          <h2 id="condition-name"></h2>
+          <p class="condition-subtitle" id="condition-subtitle"></p>
+        </div>
+        <button class="compare-button" id="compare-condition" aria-pressed="false"><svg><use href="#i-eye"/></svg><span>View typical eye</span><span class="compare-indicator" aria-hidden="true">↔</span></button>
+        <p class="comparison-note" id="comparison-note">Switch between this example and the typical reference.</p>
+        <div class="condition-explanation" aria-live="polite">
+          <p class="condition-description" id="condition-description"></p>
+          <div class="condition-change"><span class="micro-label">IN THIS MODEL</span><p id="condition-change"></p></div>
+          <p class="condition-caution" id="condition-caution"></p>
+        </div>
+        <details class="condition-anatomy"><summary>Anatomy: <span id="condition-anatomy-name">Cornea</span></summary><p id="condition-anatomy-description"></p></details>
+        <div class="condition-sources"><span class="micro-label">LEARN FROM THE SOURCES</span><div id="condition-sources"></div></div>
+        <p class="condition-disclaimer">A structural illustration, not a diagnosis or a simulation of your vision.</p>
+      </aside>
       <aside class="detail-panel hud-panel" aria-labelledby="detail-name">
         <div class="panel-heading"><span id="detail-index">STRUCTURE 01 / 09</span><span class="detail-indicator"></span></div>
         <div class="detail-content" id="detail-content" aria-live="polite">
@@ -88,10 +115,10 @@
       </section>
       <div id="tour-bar" class="tour-bar" hidden><div><span class="micro-label" id="tour-progress">GUIDED TOUR / 01 OF 09</span><p id="tour-instruction">Meet the cornea.</p></div><button id="tour-next" class="tour-button">Next structure <svg><use href="#i-arrow"/></svg></button><button id="tour-close" class="small-icon" aria-label="End guided tour"><svg><use href="#i-close"/></svg></button></div>
     </main>
-    <footer class="footer"><span><span class="status-dot"></span> HOOPES VISION / EYE ATLAS</span><p>Simplified anatomy. Colors and spacing adapted for learning.</p><button id="about-button">About & sources <svg><use href="#i-info"/></svg></button></footer>
+    <footer class="footer"><span><span class="status-dot"></span> HOOPES VISION / EYE ATLAS</span><p id="footer-note">Simplified anatomy. Colors and spacing adapted for learning.</p><button id="about-button">About & sources <svg><use href="#i-info"/></svg></button></footer>
     <div class="toast" id="toast" role="status" hidden></div>
   </div>
-  <dialog id="about-dialog"><div class="dialog-heading"><span class="eyebrow">HOOPES VISION / EYE ATLAS</span><button id="close-about" class="icon-button" aria-label="Close about panel"><svg><use href="#i-close"/></svg></button></div><h2>Understanding starts<br>with a closer look.</h2><p>An interactive introduction to the human eye, created for Hoopes Vision. Rotate the model, explore its structures, or follow the journey from light to sight.</p><div class="about-note"><span class="micro-label">ABOUT THE MODEL</span><p id="model-note"></p><p>Exploded views separate connected structures for learning. Some structures are omitted. This educational experience does not provide a diagnosis or replace an eye examination.</p></div><h3>Learn from the sources</h3><div id="source-list"></div><p class="about-attribution">An educational concept. Source links do not imply affiliation with the source organizations or clinical review.</p></dialog>
+  <dialog id="about-dialog"><div class="dialog-heading"><span class="eyebrow">HOOPES VISION / EYE ATLAS</span><button id="close-about" class="icon-button" aria-label="Close about panel"><svg><use href="#i-close"/></svg></button></div><h2>Understanding starts<br>with a closer look.</h2><p>An interactive introduction to the human eye, created for Hoopes Vision. Rotate the model, explore its structures, compare selected eye conditions, or follow the journey from light to sight.</p><div class="about-note"><span class="micro-label">ABOUT THE MODEL</span><p id="model-note"></p><p>Exploded views separate connected structures for learning. Some structures are omitted. This educational experience does not provide a diagnosis or replace an eye examination.</p></div><h3>Learn from the sources</h3><div id="source-list"></div><p class="about-attribution">An educational concept. Source links do not imply affiliation with the source organizations or clinical review.</p></dialog>
   <script type="module" src="./app.js"></script>
 </body>
 </html>

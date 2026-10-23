@@ -1,1 +1,1 @@
-{"name":"iris-eye-atlas","private":true,"type":"module","scripts":{"start":"python3 -m http.server 4173 --directory dist","check":"node --check dist/app.js && node --check dist/eye-scene.js && node --check dist/content.js"}}
+{"name":"iris-eye-atlas","private":true,"type":"module","scripts":{"start":"python3 -m http.server 4173 --directory dist","check":"node --check dist/app.js && node --check dist/eye-scene.js && node --check dist/content.js && node --check dist/conditions.js"}}
