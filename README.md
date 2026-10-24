@@ -36,6 +36,7 @@ The maintained HTML, CSS, JavaScript, logo, and bundled Three.js module are in `
 | `dist/conditions.css` | Condition navigation and responsive comparison panels |
 | `dist/app.js` | Navigation, selections, controls, and learning journeys |
 | `dist/eye-scene.js` | Procedural 3D model and pointer interactions |
+| `dist/nerve-detail.js` | Angled 3D section of the optic nerve head for glaucoma comparison |
 | `dist/content.js` | Patient education text and source links |
 | `dist/conditions.js` | Condition explanations, model-change notes, and source links |
 | `dist/assets/hoopes-logo.png` | Hoopes Vision logo |
@@ -48,11 +49,13 @@ The application has no backend or account requirement. Google Fonts supplies the
 
 The model is a simplified schematic. Colors, proportions, and exploded spacing are adapted for learning, and some structures are omitted. Educational descriptions link to the National Eye Institute and Mayo Clinic. The experience does not provide a diagnosis or replace an eye examination. Source links do not imply affiliation or clinical review.
 
-The condition views illustrate selected structural changes, not severity or an individual's vision. Keratoconus uses a localized corneal surface bulge; it does not render corneal thinning. The astigmatism example uses smooth unequal corneal curvature with a circular boundary. Cataract changes lens opacity while retaining a clear cornea. Glaucoma changes the optic nerve head cup and surrounding rim, with a labeled enlarged detail. Mayo Clinic supports the condition explanations; AAO EyeWiki supports the nerve-head anatomy. No diagnostic measurements or patient-specific pressure values are shown. The idealized light path is available only with typical anatomy.
+The condition views illustrate selected structural changes, not severity or an individual's vision. Keratoconus uses a localized corneal surface bulge; it does not render corneal thinning. The astigmatism example uses smooth unequal corneal curvature with a circular boundary. Cataract changes lens opacity while retaining a clear cornea. Glaucoma changes the optic nerve head cup and surrounding rim. A framed, rotatable 3D section shows the recessed cup and tissue rim from an angle. The typical-eye comparison keeps the same outer size and viewing angle. Mayo Clinic supports the condition explanations; AAO EyeWiki supports the nerve-head anatomy. No diagnostic measurements or patient-specific pressure values are shown. The idealized light path is available only with typical anatomy.
 
 Three.js is distributed under the MIT license. See `dist/vendor/THREE-LICENSE.txt`.
 
 ## Rollback checkpoint
+
+The annotated tag `pre-glaucoma-detail-2026-10-23` preserves commit `76b673c`, before replacing the floating enlarged disc with a framed 3D nerve-head section.
 
 The annotated Git tag `pre-conditions-2026-10-23` preserves commit `97dfbf5`, the published glass HUD version immediately before adding condition exploration. To inspect it separately:
 

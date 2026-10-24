@@ -30,7 +30,6 @@ export function createEyeScene(container, callbacks = {}) {
   const cameraTarget = new THREE.Vector3();
   const state = { view: 'cutaway', explode: 0.32, selected: null, labels: true, autoRotate: false, lightPath: false, interactionMode: 'rotate', condition: 'normal', comparing: false };
   const conditionWeights = { keratoconus: 0, astigmatism: 0, cataract: 0, glaucoma: 0 };
-  let discDetailWeight = 0;
   let actualExplode = 0.32;
   let rotationX = 0, rotationY = 0, targetX = 0, targetY = 0;
   let zoomActual = 1, zoomTarget = 1;
@@ -324,21 +323,8 @@ export function createEyeScene(container, callbacks = {}) {
     glintPositions.needsUpdate = true; glint.geometry.computeBoundingSphere();
   }
 
-  // A separate, enlarged teaching detail makes local nerve-head cupping
-  // visible without enlarging the optic disc or changing the whole eyeball.
-  const discDetail = new THREE.Group(); scene.add(discDetail); discDetail.visible = false;
-  discDetail.quaternion.setFromUnitVectors(new THREE.Vector3(-1, 0, 0), cameraDirection);
-  const enlargedDiscMat = opticDiscMat.clone(); enlargedDiscMat.transparent = true; enlargedDiscMat.depthTest = false; enlargedDiscMat.depthWrite = false;
-  const enlargedDisc = new THREE.Mesh(opticDisc.geometry.clone(), enlargedDiscMat); enlargedDisc.renderOrder = 101; discDetail.add(enlargedDisc);
-  const discBacking = new THREE.Mesh(new THREE.CylinderGeometry(discRadius, discRadius, .012, 96, 1, true), new THREE.MeshStandardMaterial({ color: 0xad725f, roughness: .75, side: THREE.DoubleSide, transparent: true, depthTest: false, depthWrite: false }));
-  discBacking.rotation.z = Math.PI / 2; discBacking.position.x = .006; discBacking.renderOrder = 100; discDetail.add(discBacking);
-  const detailEdge = new THREE.Mesh(new THREE.TorusGeometry(discRadius * 1.10, .0018, 6, 120), new THREE.MeshBasicMaterial({ color: 0x7bbac7, transparent: true, opacity: .7, depthTest: false, depthWrite: false })); detailEdge.rotation.y = Math.PI / 2; detailEdge.position.x = -.004; detailEdge.renderOrder = 102; discDetail.add(detailEdge);
-  const discConnector = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0x82b9c2, transparent: true, opacity: .32, depthWrite: false, depthTest: false }));
-  discConnector.visible = false; discConnector.renderOrder = 99; scene.add(discConnector);
-  const nativeDiscWorld = new THREE.Vector3(), detailLabelWorld = new THREE.Vector3();
-
   function updateConditionGeometry() {
-    updateCorneaGeometry(); updateDiscGeometry(opticDisc.geometry, conditionWeights.glaucoma); updateDiscGeometry(enlargedDisc.geometry, conditionWeights.glaucoma);
+    updateCorneaGeometry(); updateDiscGeometry(opticDisc.geometry, conditionWeights.glaucoma);
     const amount = conditionWeights.cataract;
     lensMat.color.copy(normalLensColor).lerp(cloudyLensColor, amount);
     lensMat.transmission = THREE.MathUtils.lerp(.7, .08, amount); lensMat.roughness = THREE.MathUtils.lerp(.055, .43, amount);
@@ -352,10 +338,6 @@ export function createEyeScene(container, callbacks = {}) {
       if (Math.abs(value - goal) < .0005) value = goal;
       conditionWeights[id] = value; changed ||= previous !== value;
     }
-    const detailGoal = state.condition === 'glaucoma' ? 1 : 0;
-    discDetailWeight = instant || reducedMotion ? detailGoal : THREE.MathUtils.damp(discDetailWeight, detailGoal, 8, dt);
-    if (Math.abs(discDetailWeight - detailGoal) < .0005) discDetailWeight = detailGoal;
-    discDetail.visible = discConnector.visible = discDetailWeight > .001;
     if (changed || instant) updateConditionGeometry();
   }
   function setCondition(id, options = {}) {
@@ -364,23 +346,6 @@ export function createEyeScene(container, callbacks = {}) {
     updateConditionTransition(0, options.animate === false); return true;
   }
   function setComparison(value) { state.comparing = state.condition !== 'normal' && !!value; updateConditionTransition(0); }
-  function placeDiscDetail() {
-    if (!discDetail.visible) return;
-    const mobile = width <= 760, worldWidth = viewportWorldHeight * camera.aspect;
-    const radius = viewportWorldHeight * (mobile ? .065 : .09);
-    discDetail.position.copy(cameraTarget)
-      .addScaledVector(cameraRight, worldWidth * (mobile ? .19 : .18))
-      .addScaledVector(cameraUp, viewportWorldHeight * (mobile ? .10 : -.17));
-    discDetail.scale.setScalar(radius / discRadius * discDetailWeight);
-    detailLabelWorld.copy(discDetail.position).addScaledVector(cameraUp, radius * (mobile ? -1.24 : 1.30));
-    nativeDiscWorld.copy(opticDisc.position); retina.localToWorld(nativeDiscWorld);
-    const line = discConnector.geometry.attributes.position;
-    line.setXYZ(0, nativeDiscWorld.x, nativeDiscWorld.y, nativeDiscWorld.z);
-    const edge = discDetail.position.clone().addScaledVector(cameraRight, -radius * .76).addScaledVector(cameraUp, radius * .76);
-    const elbow = nativeDiscWorld.clone().lerp(edge, .60).addScaledVector(cameraUp, -.08);
-    line.setXYZ(1, elbow.x, elbow.y, elbow.z); line.setXYZ(2, edge.x, edge.y, edge.z);
-    line.needsUpdate = true; discConnector.geometry.computeBoundingSphere(); discConnector.material.opacity = .4 * discDetailWeight;
-  }
 
   const halo = new THREE.Group(); model.add(halo);
   const haloMat = new THREE.MeshBasicMaterial({ color: 0x76dacb, transparent: true, opacity: .55, depthWrite: false });
@@ -550,6 +515,7 @@ export function createEyeScene(container, callbacks = {}) {
     'optic-nerve': new THREE.Vector3(2.47, -.21, -.16)
   };
   const projected = new THREE.Vector3();
+  const nerveHeadWorld = new THREE.Vector3(), nerveHeadNormal = new THREE.Vector3(), nerveHeadToCamera = new THREE.Vector3();
   function emitLabels() {
     if (!callbacks.onLabelPositions) return;
     model.updateMatrixWorld(true);
@@ -559,8 +525,11 @@ export function createEyeScene(container, callbacks = {}) {
       const hiddenInWhole = state.view === 'whole' && ['lens', 'choroid', 'retina', 'vitreous'].includes(id);
       labels.push({ id, x: (projected.x * .5 + .5) * width, y: (-projected.y * .5 + .5) * height, visible: state.labels && !hiddenInWhole && projected.z > -1 && projected.z < 1 && Math.abs(projected.x) < 1.1 && Math.abs(projected.y) < 1.1 });
     }
-    projected.copy(detailLabelWorld).project(camera);
-    labels.push({ id: 'condition-detail', x: (projected.x * .5 + .5) * width, y: (-projected.y * .5 + .5) * height, visible: state.condition === 'glaucoma' && discDetailWeight > .05 && projected.z > -1 && projected.z < 1 });
+    nerveHeadWorld.copy(opticDisc.position); retina.localToWorld(nerveHeadWorld);
+    nerveHeadNormal.set(-1, 0, 0).transformDirection(retina.matrixWorld);
+    nerveHeadToCamera.copy(camera.position).sub(nerveHeadWorld).normalize();
+    projected.copy(nerveHeadWorld).project(camera);
+    labels.push({ id: 'optic-nerve-head', x: (projected.x * .5 + .5) * width, y: (-projected.y * .5 + .5) * height, visible: state.labels && state.view !== 'whole' && state.condition === 'glaucoma' && nerveHeadNormal.dot(nerveHeadToCamera) > .2 && projected.z > -1 && projected.z < 1 });
     callbacks.onLabelPositions(labels);
   }
   function updateSelection(time, dt) {
@@ -596,7 +565,7 @@ export function createEyeScene(container, callbacks = {}) {
     model.rotation.set(rotationX, rotationY, 0); model.position.y = reducedMotion ? 0 : Math.sin(time * .65) * .035;
     zoomActual = THREE.MathUtils.damp(zoomActual, zoomTarget, 9, dt);
     panX = THREE.MathUtils.damp(panX, panTargetX, 12, dt); panY = THREE.MathUtils.damp(panY, panTargetY, 12, dt); setCamera();
-    updateConditionTransition(dt); model.updateMatrixWorld(true); placeDiscDetail();
+    updateConditionTransition(dt); model.updateMatrixWorld(true);
     updateSelection(time, dt);
     if (state.lightPath) rayPaths.forEach((ray, i) => { if (ray.curve) ray.dot.position.copy(ray.curve.getPoint(reducedMotion ? .6 : (time * .23 + i * .13) % 1)); });
     renderer.render(scene, camera);
@@ -621,6 +590,7 @@ export function createEyeScene(container, callbacks = {}) {
       if (state.condition === 'keratoconus') { targetX = -.06; targetY = -.20; }
       else if (state.condition === 'astigmatism') { targetX = .10; targetY = .48; }
       else if (state.condition === 'cataract') { targetX = 0; targetY = .16; }
+      else if (state.condition === 'glaucoma') { targetX = .02; targetY = .55; }
       else { targetX = 0; targetY = 0; }
       const cornealCondition = ['keratoconus', 'astigmatism'].includes(state.condition), mobile = width <= 760;
       const baseWorldHeight = mobile ? 2.92 / (.62 * camera.aspect) : 2 * (6.6 + state.explode * 1.05) * Math.tan(THREE.MathUtils.degToRad(camera.fov * .5));

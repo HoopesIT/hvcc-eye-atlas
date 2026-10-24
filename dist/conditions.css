@@ -45,6 +45,16 @@
 .compare-button svg { width: 18px; height: 18px; }
 .compare-indicator { margin-left: auto; }
 .comparison-note { font-size: 11px; color: #b5cddc; line-height: 1.6; margin: 9px 0 17px; }
+.nerve-detail[hidden] { display: none; }
+.nerve-detail { overflow: hidden; margin: 18px -5px 21px; border: 1px solid rgba(192, 231, 246, .25); border-radius: 12px; background: rgba(3, 17, 29, .56); }
+.nerve-detail-heading { display: flex; align-items: center; justify-content: space-between; gap: 7px; padding: 12px 10px 0; color: #bedbe7; font-size: 9px; letter-spacing: .5px; }
+.nerve-detail-heading > span:last-child { color: #b4e9ed; font-size: 8px; letter-spacing: .15px; }
+.nerve-detail-scene { position: relative; height: 215px; isolation: isolate; }
+.nerve-detail-scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.nerve-detail-tools { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 10px; gap: 5px; font-size: 10px; color: #b8d3e1; }
+.nerve-detail-tools button { color: #bdeef2; padding: 5px 7px; border: 1px solid rgba(185, 230, 243, .25); border-radius: 5px; white-space: nowrap; }
+.nerve-detail > p { margin: 0; padding: 10px; border-top: 1px solid var(--line); color: #b7cfdc; font-size: 11px; line-height: 1.6; }
+.nerve-detail-error { padding: 20px; font-size: 13px; line-height: 1.7; color: #d3e7ef; }
 .condition-anatomy { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 14px 0; color: #cee2ec; }
 .condition-anatomy summary { cursor: pointer; font-size: 12px; line-height: 1.5; }
 .condition-anatomy p { color: #c1d6e4; font-size: 12px; line-height: 1.8; margin-bottom: 0; }
@@ -77,6 +87,7 @@
 .condition-scene-label { position: absolute; display: grid; gap: 3px; padding: 8px 10px; border: 1px solid rgba(204, 236, 249, .32); border-radius: 8px; background: rgba(7, 25, 40, .72); color: #e3f1f8; font-size: 11px; line-height: 1.5; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); pointer-events: none; transform: translate(-50%, -50%); white-space: nowrap; }
 .condition-scene-label small { font-size: 9px; color: #bad4e3; }
 .condition-scene-label[hidden] { display: none; }
+.condition-scene-label::after { content: ''; position: absolute; left: 50%; top: 100%; height: 29px; border-left: 1px solid rgba(188, 230, 240, .55); }
 .conditions-mode .intro .eyebrow { color: #b8eaf2; }
 .conditions-mode .right-rail { scroll-padding-top: 4px; }
 @media (min-width: 1600px) { .condition-library { top: 308px; } .right-rail .condition-detail { padding-inline: 23px; } .condition-copy h2 { font-size: 34px; } }

@@ -1,6 +1,7 @@
-import { createEyeScene } from './eye-scene.js';
+import { createEyeScene } from './eye-scene.js?v=nerve-section-5';
 import { PARTS, VISION_STEPS, SOURCES, MODEL_NOTE } from './content.js';
-import { CONDITIONS, MODEL_CONDITION_NOTE } from './conditions.js';
+import { CONDITIONS, MODEL_CONDITION_NOTE } from './conditions.js?v=nerve-section-5';
+import { createNerveDetail } from './nerve-detail.js?v=nerve-section-5';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -16,6 +17,8 @@ let visionIndex = -1;
 let conditionId = 'keratoconus';
 let comparing = false;
 let engine;
+let nerveDetail;
+let nerveDetailFailed = false;
 let toastTimer;
 const visited = new Set();
 const labels = new Map();
@@ -23,7 +26,7 @@ const categories = { cornea: 'OUTER STRUCTURE', iris: 'ANTERIOR STRUCTURE', pupi
 const footerNote = $('#footer-note').textContent;
 const conditionAnnotation = document.createElement('span');
 conditionAnnotation.className = 'condition-scene-label';
-conditionAnnotation.innerHTML = 'Optic nerve head<small>Enlarged schematic</small>';
+conditionAnnotation.textContent = 'Optic nerve head';
 conditionAnnotation.hidden = true;
 $('#scene-labels').append(conditionAnnotation);
 
@@ -105,12 +108,13 @@ function updateLabels(positions) {
   const shown = new Set();
   conditionAnnotation.hidden = true;
   sorted.forEach(({ id, x, y, visible }) => {
-    if (id === 'condition-detail') {
+    if (id === 'optic-nerve-head') {
       const width = 155;
-      const blocked = panels.some((rect) => x + sceneRect.left + width / 2 > rect.left - 8 && x + sceneRect.left - width / 2 < rect.right + 8 && y + sceneRect.top + 25 > rect.top - 8 && y + sceneRect.top - 25 < rect.bottom + 8);
-      const show = mode === 'conditions' && conditionId === 'glaucoma' && visible && !blocked && x > width / 2 && x < w - width / 2 && y > 25 && y < h - 25;
+      const markerY = y - 47;
+      const blocked = panels.some((rect) => x + sceneRect.left + width / 2 > rect.left - 8 && x + sceneRect.left - width / 2 < rect.right + 8 && markerY + sceneRect.top + 25 > rect.top - 8 && markerY + sceneRect.top - 25 < rect.bottom + 8);
+      const show = labelsVisible && mode === 'conditions' && conditionId === 'glaucoma' && visible && !blocked && x > width / 2 && x < w - width / 2 && markerY > 25 && y < h - 25;
       conditionAnnotation.hidden = !show;
-      if (show) { conditionAnnotation.style.left = `${x}px`; conditionAnnotation.style.top = `${y}px`; occupied.push({ x, y, width }); }
+      if (show) { conditionAnnotation.style.left = `${x}px`; conditionAnnotation.style.top = `${markerY}px`; occupied.push({ x, y: markerY, width }); }
       return;
     }
     const label = labels.get(id);
@@ -203,6 +207,7 @@ function applyCondition(id) {
   $('.condition-detail').scrollTop = 0;
   $('.right-rail').scrollTop = 0;
   updateComparison();
+  if (id === 'glaucoma') nerveDetail?.reset();
 }
 
 function updateComparison() {
@@ -214,10 +219,23 @@ function updateComparison() {
   button.setAttribute('aria-pressed', String(comparing));
   button.querySelector('span').textContent = comparing ? `Return to ${condition.name.toLowerCase()}` : 'View typical eye';
   $('#condition-state').textContent = comparing || reference ? 'TYPICAL REFERENCE' : 'SCHEMATIC';
-  $('#condition-change').textContent = comparing ? CONDITIONS[0].modelChange : condition.modelChange;
+  $('#condition-change').textContent = comparing ? (conditionId === 'glaucoma' ? 'Shows the reference nerve head with a smaller, shallower cup and a wider surrounding rim in the same 3D section.' : CONDITIONS[0].modelChange) : condition.modelChange;
   $('#comparison-note').textContent = reference ? 'Choose a condition to explore a structural change.' : comparing ? 'The model now shows typical anatomy in the same position. Return to the condition to compare.' : 'Switch to typical anatomy without moving the model.';
   const notes = { normal: 'Typical anatomy · schematic reference', keratoconus: 'Corneal shape · structural schematic', astigmatism: 'Corneal shape · structural schematic', glaucoma: 'Optic nerve head · enlarged schematic', cataract: 'Lens opacity · schematic example' };
   $('#condition-model-note-text').textContent = comparing ? `Typical anatomy · comparing ${condition.name.toLowerCase()}` : notes[conditionId];
+  const showNerveDetail = mode === 'conditions' && conditionId === 'glaucoma';
+  $('#nerve-detail').hidden = !showNerveDetail;
+  if (showNerveDetail && !nerveDetail && !nerveDetailFailed) {
+    try { nerveDetail = createNerveDetail($('#nerve-detail-scene')); }
+    catch (error) {
+      nerveDetailFailed = true;
+      $('#nerve-detail-scene').innerHTML = '<p class="nerve-detail-error">The central cup is a recess where nerve tissue meets the back of the eye. Compare the typical reference to see the rim change.</p>';
+      console.error('Unable to initialize the nerve-head detail:', error);
+    }
+  }
+  nerveDetail?.setVisible(showNerveDetail);
+  nerveDetail?.setComparison(comparing);
+  $('#nerve-detail-state').textContent = comparing ? 'TYPICAL REFERENCE' : 'GLAUCOMA EXAMPLE';
   updateSceneStatus();
 }
 
@@ -246,6 +264,8 @@ function setMode(next) {
     engine?.setCondition('normal', { animate: false });
     $('#app').dataset.condition = 'normal';
     conditionAnnotation.hidden = true;
+    $('#nerve-detail').hidden = true;
+    nerveDetail?.setVisible(false);
     if (next === 'vision') { endTour(); visionIndex = 0; setView('cutaway', 12); engine?.setLightPath(true); updateVision(); }
     else { visionIndex = -1; setView('cutaway'); updateVision(); }
     engine?.focusCondition();
@@ -366,6 +386,7 @@ $('#compare-condition').addEventListener('click', () => {
   engine?.setComparison(comparing);
   updateComparison();
 });
+$('#reset-nerve-detail').addEventListener('click', () => nerveDetail?.reset());
 $('#part-prev').addEventListener('click', () => choosePart(PARTS[(PARTS.findIndex((part) => part.id === selectedId) + PARTS.length - 1) % PARTS.length].id));
 $('#part-next').addEventListener('click', () => choosePart(PARTS[(PARTS.findIndex((part) => part.id === selectedId) + 1) % PARTS.length].id));
 $('#start-tour').addEventListener('click', startTour);
@@ -412,4 +433,4 @@ try {
   $('#scene-status').textContent = 'ANATOMY EXPLORER / TEXT VIEW';
   console.error('Unable to initialize the eye model:', error);
 }
-window.addEventListener('pagehide', () => engine?.destroy(), { once: true });
+window.addEventListener('pagehide', () => { engine?.destroy(); nerveDetail?.destroy(); }, { once: true });

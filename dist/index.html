@@ -9,7 +9,7 @@
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./glass.css">
-  <link rel="stylesheet" href="./conditions.css">
+  <link rel="stylesheet" href="./conditions.css?v=nerve-section-5">
 </head>
 <body>
   <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -78,6 +78,12 @@
         </div>
         <button class="compare-button" id="compare-condition" aria-pressed="false"><svg><use href="#i-eye"/></svg><span>View typical eye</span><span class="compare-indicator" aria-hidden="true">↔</span></button>
         <p class="comparison-note" id="comparison-note">Switch between this example and the typical reference.</p>
+        <section class="nerve-detail" id="nerve-detail" aria-label="Enlarged 3D section of the optic nerve head" hidden>
+          <div class="nerve-detail-heading"><span>OPTIC NERVE HEAD</span><span id="nerve-detail-state">GLAUCOMA EXAMPLE</span></div>
+          <div class="nerve-detail-scene" id="nerve-detail-scene"></div>
+          <div class="nerve-detail-tools"><span>Drag to turn the detail</span><button id="reset-nerve-detail" aria-label="Reset optic nerve detail angle">Reset angle ↺</button></div>
+          <p>Cutaway for learning. Size and depth are simplified.</p>
+        </section>
         <div class="condition-explanation" aria-live="polite">
           <p class="condition-description" id="condition-description"></p>
           <div class="condition-change"><span class="micro-label">IN THIS MODEL</span><p id="condition-change"></p></div>
@@ -119,6 +125,6 @@
     <div class="toast" id="toast" role="status" hidden></div>
   </div>
   <dialog id="about-dialog"><div class="dialog-heading"><span class="eyebrow">HOOPES VISION / EYE ATLAS</span><button id="close-about" class="icon-button" aria-label="Close about panel"><svg><use href="#i-close"/></svg></button></div><h2>Understanding starts<br>with a closer look.</h2><p>An interactive introduction to the human eye, created for Hoopes Vision. Rotate the model, explore its structures, compare selected eye conditions, or follow the journey from light to sight.</p><div class="about-note"><span class="micro-label">ABOUT THE MODEL</span><p id="model-note"></p><p>Exploded views separate connected structures for learning. Some structures are omitted. This educational experience does not provide a diagnosis or replace an eye examination.</p></div><h3>Learn from the sources</h3><div id="source-list"></div><p class="about-attribution">An educational concept. Source links do not imply affiliation with the source organizations or clinical review.</p></dialog>
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=nerve-section-5"></script>
 </body>
 </html>
