@@ -6,12 +6,12 @@ A browser-based, procedural 3D eye explorer built with native JavaScript modules
 
 *User-supplied screenshot of the glaucoma explorer with expanded anatomy. The image is stored in this repository.*
 
-[Hosted preview](https://hoopes-vision-eye-atlas.joshchild.chatgpt.site/) · [Repository](https://github.com/joshchild/hvcc-eye-atlas)
+[Hosted preview](https://hoopes-vision-eye-atlas.joshchild.chatgpt.site/) · [Repository](https://github.com/HoopesIT/hvcc-eye-atlas)
 
 ## Quick start
 
 ```sh
-gh repo clone joshchild/hvcc-eye-atlas
+gh repo clone HoopesIT/hvcc-eye-atlas
 cd hvcc-eye-atlas
 python3 -m http.server 4173 --directory dist
 ```
@@ -19,7 +19,7 @@ python3 -m http.server 4173 --directory dist
 Open **http://localhost:4173/**. Keep the server running while developing; stop it with `Ctrl+C`. If GitHub CLI is unavailable, clone with Git:
 
 ```sh
-git clone https://github.com/joshchild/hvcc-eye-atlas.git
+git clone https://github.com/HoopesIT/hvcc-eye-atlas.git
 cd hvcc-eye-atlas
 python3 -m http.server 4173 --directory dist
 ```
