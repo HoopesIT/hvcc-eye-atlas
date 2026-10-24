@@ -43,7 +43,7 @@ export const CONDITIONS = [
     partId: 'cornea',
     subtitle: 'A thinning, cone-shaped cornea',
     description: 'With keratoconus, the cornea becomes thinner and steeper, bulging outward into a cone shape. This can cause blurred or distorted vision and greater sensitivity to light and glare.',
-    modelChange: 'Creates a localized cone-shaped bulge. Surface contours make the change in corneal shape easier to see.',
+    modelChange: 'Creates a localized cone-shaped bulge in the cornea.',
     caution: 'This illustrates surface shape, not corneal thickness. The exaggerated bulge does not represent a diagnostic stage.',
     sourceUrls: [KERATOCONUS],
     preferredView: 'exploded',

@@ -216,7 +216,7 @@ function updateComparison() {
   $('#condition-state').textContent = comparing || reference ? 'TYPICAL REFERENCE' : 'SCHEMATIC';
   $('#condition-change').textContent = comparing ? CONDITIONS[0].modelChange : condition.modelChange;
   $('#comparison-note').textContent = reference ? 'Choose a condition to explore a structural change.' : comparing ? 'The model now shows typical anatomy in the same position. Return to the condition to compare.' : 'Switch to typical anatomy without moving the model.';
-  const notes = { normal: 'Typical anatomy · schematic reference', keratoconus: 'Corneal surface contours · schematic shape', astigmatism: 'Corneal surface contours · schematic shape', glaucoma: 'Optic nerve head · enlarged schematic', cataract: 'Lens opacity · schematic example' };
+  const notes = { normal: 'Typical anatomy · schematic reference', keratoconus: 'Corneal shape · structural schematic', astigmatism: 'Corneal shape · structural schematic', glaucoma: 'Optic nerve head · enlarged schematic', cataract: 'Lens opacity · schematic example' };
   $('#condition-model-note-text').textContent = comparing ? `Typical anatomy · comparing ${condition.name.toLowerCase()}` : notes[conditionId];
   updateSceneStatus();
 }

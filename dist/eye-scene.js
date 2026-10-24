@@ -30,7 +30,7 @@ export function createEyeScene(container, callbacks = {}) {
   const cameraTarget = new THREE.Vector3();
   const state = { view: 'cutaway', explode: 0.32, selected: null, labels: true, autoRotate: false, lightPath: false, interactionMode: 'rotate', condition: 'normal', comparing: false };
   const conditionWeights = { keratoconus: 0, astigmatism: 0, cataract: 0, glaucoma: 0 };
-  let contourWeight = 0, discDetailWeight = 0;
+  let discDetailWeight = 0;
   let actualExplode = 0.32;
   let rotationX = 0, rotationY = 0, targetX = 0, targetY = 0;
   let zoomActual = 1, zoomTarget = 1;
@@ -309,20 +309,6 @@ export function createEyeScene(container, callbacks = {}) {
     // rounded cone and the two smooth meridians represent different shapes.
     return -.415 * height - cone * .48 * localizedCone - toric * .14 * height * (y * y - z * z) / (.886 * .886);
   }
-  const surfaceContours = new THREE.Group(); cornea.add(surfaceContours); surfaceContours.visible = false;
-  const contourMaterial = new THREE.LineBasicMaterial({ color: 0x96e6e9, transparent: true, opacity: 0, depthWrite: false });
-  const meridianMaterial = new THREE.LineBasicMaterial({ color: 0xe6cf9a, transparent: true, opacity: 0, depthWrite: false });
-  const contourLines = [];
-  for (const radius of [.18, .35, .52, .70, .82]) {
-    const points = [];
-    for (let i = 0; i <= 112; i++) { const a = i / 112 * Math.PI * 2; points.push(new THREE.Vector3(0, Math.cos(a) * radius, Math.sin(a) * radius)); }
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), contourMaterial); surfaceContours.add(line); contourLines.push(line);
-  }
-  for (const angle of [0, Math.PI / 2]) {
-    const points = [];
-    for (let i = 0; i <= 112; i++) { const r = -.88 + i / 112 * 1.76; points.push(new THREE.Vector3(0, Math.cos(angle) * r, Math.sin(angle) * r)); }
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), meridianMaterial); surfaceContours.add(line); contourLines.push(line);
-  }
   function updateCorneaGeometry() {
     const cone = conditionWeights.keratoconus, toric = conditionWeights.astigmatism, positions = corneaMesh.geometry.attributes.position;
     if (cone === 0 && toric === 0) {
@@ -332,12 +318,10 @@ export function createEyeScene(container, callbacks = {}) {
       corneaMesh.geometry.computeVertexNormals();
     }
     positions.needsUpdate = true; corneaMesh.geometry.computeBoundingSphere();
-    for (const line of [...contourLines, glint]) {
-      const points = line.geometry.attributes.position;
-      if (line === glint && cone === 0 && toric === 0) points.array.set(normalGlintPositions);
-      else for (let i = 0; i < points.count; i++) points.setX(i, cornealSurfaceX(points.getY(i), points.getZ(i), cone, toric) - (line === glint ? .006 : .007));
-      points.needsUpdate = true; line.geometry.computeBoundingSphere();
-    }
+    const glintPositions = glint.geometry.attributes.position;
+    if (cone === 0 && toric === 0) glintPositions.array.set(normalGlintPositions);
+    else for (let i = 0; i < glintPositions.count; i++) glintPositions.setX(i, cornealSurfaceX(glintPositions.getY(i), glintPositions.getZ(i), cone, toric) - .006);
+    glintPositions.needsUpdate = true; glint.geometry.computeBoundingSphere();
   }
 
   // A separate, enlarged teaching detail makes local nerve-head cupping
@@ -368,13 +352,9 @@ export function createEyeScene(container, callbacks = {}) {
       if (Math.abs(value - goal) < .0005) value = goal;
       conditionWeights[id] = value; changed ||= previous !== value;
     }
-    const contourGoal = ['keratoconus', 'astigmatism'].includes(state.condition) ? 1 : 0;
     const detailGoal = state.condition === 'glaucoma' ? 1 : 0;
-    contourWeight = instant || reducedMotion ? contourGoal : THREE.MathUtils.damp(contourWeight, contourGoal, 8, dt);
     discDetailWeight = instant || reducedMotion ? detailGoal : THREE.MathUtils.damp(discDetailWeight, detailGoal, 8, dt);
-    if (Math.abs(contourWeight - contourGoal) < .0005) contourWeight = contourGoal;
     if (Math.abs(discDetailWeight - detailGoal) < .0005) discDetailWeight = detailGoal;
-    surfaceContours.visible = contourWeight > .001; contourMaterial.opacity = contourWeight * .5; meridianMaterial.opacity = contourWeight * .75;
     discDetail.visible = discConnector.visible = discDetailWeight > .001;
     if (changed || instant) updateConditionGeometry();
   }
