@@ -6,7 +6,7 @@ A browser-based, procedural 3D eye explorer built with native JavaScript modules
 
 *User-supplied screenshot of the glaucoma explorer with expanded anatomy. The image is stored in this repository.*
 
-[Hosted preview](https://hoopes-vision-eye-atlas.joshchild.chatgpt.site/) · [Repository](https://github.com/HoopesIT/hvcc-eye-atlas)
+[Firebase hosting](https://hvcc-eye-atlas.web.app/) · [Sites preview](https://hoopes-vision-eye-atlas.joshchild.chatgpt.site/) · [Repository](https://github.com/HoopesIT/hvcc-eye-atlas)
 
 ## Quick start
 
@@ -55,7 +55,7 @@ npm run check   # node --check on all five application modules
 | Model generation | Procedural `BufferGeometry`, primitive meshes, curves, and Canvas2D-generated textures |
 | Interface styling | Handwritten CSS, custom properties, media queries, and `backdrop-filter` |
 | State | In-memory module variables, reset on page reload |
-| Hosting | Static files; the existing Sites project publishes `dist/` |
+| Hosting | Static files from `dist/`; Firebase Hosting and Sites are configured separately |
 
 The source contains no framework, bundler, package dependencies, application backend, database, application authentication, analytics integration, or service worker.
 
@@ -64,6 +64,8 @@ The source contains no framework, bundler, package dependencies, application bac
 ├── README.md
 ├── package.json
 ├── .gitignore
+├── firebase.json            # Firebase Hosting document root, site, and headers
+├── .firebaserc              # Default Firebase project selection
 ├── .openai/
 │   └── hosting.json          # Sites identity and static-directory setting
 ├── docs/
@@ -300,6 +302,54 @@ The deployment unit is **`dist/`**. Configure a static host with no build comman
 
 Core geometry, Three.js, logo, favicon, and UI files are local. `styles.css` loads DM Sans and Space Grotesk through Google Fonts; system fonts provide fallbacks. Source links and the consultation CTA navigate externally. The CTA links to `https://www.hoopesvision.com/`; it does not submit a booking or call a scheduling API.
 
+### Firebase Hosting
+
+The Firebase project and Hosting site are both **`hvcc-eye-atlas`**. The configured public URL is **https://hvcc-eye-atlas.web.app/**. This is a stable Hosting URL, not an expiring preview-channel URL. The first release was deployed and verified on 2026-10-26. All 13 hosted files matched the local `dist/` files byte-for-byte, JavaScript MIME types were checked, and the model and condition explorer were checked in the browser.
+
+`firebase.json` publishes `dist/` directly. `.firebaserc` selects the project by default; deployment commands below also pass the project explicitly to avoid relying on local defaults. Firebase tooling is required only on a developer or release machine. The hosted application still has no Node.js runtime, Firebase SDK, or backend dependency.
+
+Install the official CLI, then authorize the account that has access to this project. Replace `you@example.com` in the commands below with your authorized Google account email:
+
+```sh
+npm install -g firebase-tools
+firebase login:add you@example.com
+firebase login:list
+```
+
+`login:add <email>` supports selecting an additional account without replacing another project's default login. If the account is already listed, reuse that authorization. Do not store login tokens or account credentials in the repository.
+
+From the repository root, validate and deploy:
+
+```sh
+npm run check
+firebase deploy --only hosting --project hvcc-eye-atlas --account you@example.com --non-interactive
+```
+
+There is no dependency-install or build step for the application. Deploy the maintained `dist/` files as they are. There are no SPA rewrites; requests for JavaScript, CSS, images, and the vendored Three.js module must resolve to their actual files. Check that JavaScript responses use a JavaScript MIME type, particularly because the configuration sends `X-Content-Type-Options: nosniff`.
+
+All paths receive `Cache-Control: no-cache`, which permits storage but requires revalidation before reuse. This complements the existing module query strings and reduces mixed-version releases while assets retain stable filenames. `.firebase/` contains local CLI cache data and is ignored by Git.
+
+After each deployment, verify the release URL, representative asset responses, and the interactive model. A successful GitHub push does not update Firebase. Firebase deployment also does not update the Sites publication.
+
+To embed the public URL in another website:
+
+```html
+<iframe
+  src="https://hvcc-eye-atlas.web.app/"
+  title="Hoopes Vision Interactive Eye Atlas"
+  width="100%"
+  height="850"
+  style="border: 0; display: block;"
+  allow="fullscreen"
+  allowfullscreen
+  loading="lazy"
+></iframe>
+```
+
+The parent website controls the iframe's dimensions. Give it enough height for the HUD, and retain fullscreen permission for the atlas's fullscreen button. The Firebase configuration sets no `X-Frame-Options` or CSP `frame-ancestors` restriction. If the parent site has a Content Security Policy, its `frame-src` directive must permit `https://hvcc-eye-atlas.web.app`. The Firebase URL is publicly accessible and does not inherit the Sites access policy.
+
+### Sites publication
+
 The existing Sites binding is:
 
 ```json
@@ -326,7 +376,7 @@ Entry URLs currently use `?v=nerve-section-5`. `index.html` versions `app.js` an
 | Missing-element errors or stale styles after a release | Check coordinated HTML/module/CSS cache keys and reload. |
 | Eye fails to blur beneath HUD | Inspect canvas alpha, stacking, backdrop support, transparency, and opaque ancestors. |
 | Labels disappear | Check label toggle, active view, bounds, and HUD/collision filtering. |
-| Hosted app lacks local changes | Check the deployed Sites version separately from the GitHub branch. |
+| Hosted app lacks local changes | Check the Firebase release or deployed Sites version separately from the GitHub branch. |
 
 ## Model scope, sources, and licensing
 
